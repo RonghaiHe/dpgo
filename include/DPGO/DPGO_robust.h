@@ -114,9 +114,12 @@ class RobustCost {
    * @return threshold
    */
   static double computeErrorThresholdAtQuantile(double quantile, size_t dimension) {
+    // 检查维度是否=3
     CHECK_EQ((int) dimension, 3) << "quantile function currently only supports 3D problem.";
+    // 检查置信度是否大于等于0
     CHECK_GT(quantile, 0);
     if (quantile < 1)
+      // 返回6自由度卡方分布的分位数开根号
       return std::sqrt(chi2inv(quantile, 6));
     else
       return 1e5;

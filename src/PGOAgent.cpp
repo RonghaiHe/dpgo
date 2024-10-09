@@ -108,24 +108,49 @@ bool PGOAgent::getSharedPoseDict(PoseDict &map) {
   }
   return true;
 }
-
+/**
+ * Get a map of all public poses of this robot with the specified neighbor
+ * 获取与邻居共享的姿态字典
+ * 
+ * 本函数用于在多机器人系统中，根据当前机器人的状态和邻居机器人的ID，计算并获取两机器人之间的相对位姿信息
+ * 这些相对位姿信息以姿态字典的形式返回，姿态字典包含了机器人在世界坐标系中的位姿
+ * 
+ * @param map 传入的姿态字典，将被填充相对位姿信息
+ * @param neighborID 邻居机器人的ID，用于识别与之共享姿态信息的机器人
+ * @return 如果成功获取到共享的姿态字典，返回true；否则，返回false
+ */
 bool PGOAgent::getSharedPoseDictWithNeighbor(PoseDict &map, unsigned neighborID) {
+  // 检查状态，如果机器人轨迹没有完成初始化，则返回false，表示无法获取姿态字典
   if (mState != PGOAgentState::INITIALIZED)
     return false;
+  
+  // 清空传入的姿态字典，准备存储新的共享姿态信息
   map.clear();
+  
+  // 加锁保护姿态数据，确保在多线程环境下的数据安全
   lock_guard<mutex> lock(mPosesMutex);
+  
+  // 获取当前机器人与指定邻居机器人之间的环路闭合测量值
   std::vector<RelativeSEMeasurement> measurements = mPoseGraph->sharedLoopClosuresWithRobot(neighborID);
+  
+  // 遍历所有环路闭合测量值，计算并填充姿态字典
   for (const auto &m : measurements) {
+    // 如果第一个参与测量的机器人是当前机器人
     if (m.r1 == getID()) {
+      // 创建姿态ID
       PoseID pose_id(m.r1, m.p1);
+      // 根据测量值计算当前机器人的位姿，并将其加入到姿态字典中
       LiftedPose Xi(X.pose(m.p1));
       map.emplace(pose_id, Xi);
     } else if (m.r2 == getID()) {
+      // 如果第二个参与测量的机器人是当前机器人，执行类似的计算和填充操作
       PoseID pose_id(m.r2, m.p2);
       LiftedPose Xi(X.pose(m.p2));
       map.emplace(pose_id, Xi);
     }
   }
+  
+  // 返回true，表示成功获取了共享的姿态字典
   return true;
 }
 
@@ -144,24 +169,47 @@ bool PGOAgent::getAuxSharedPoseDict(PoseDict &map) {
   }
   return true;
 }
-
+/**
+ * Get a map of all auxiliary public poses of this robot with the specified neighbor
+ * 获取与邻居共享的辅助姿态字典
+ * 
+ * 此函数用于在PGOAgent实例与其邻居之间获取一个包含共享姿态的字典
+ * 它根据当前代理的状态，清除现有地图数据，确保线程安全，并填充新的测量数据
+ * 
+ * @param map 一个引用类型的PoseDict，用于存储共享姿态信息
+ * @param neighborID 邻居代理的唯一标识符
+ * @return 如果操作成功，返回true；否则，返回false
+ */
 bool PGOAgent::getAuxSharedPoseDictWithNeighbor(PoseDict &map, unsigned neighborID) {
+  // 检查代理状态，如果未初始化轨迹，返回false
   if (mState != PGOAgentState::INITIALIZED)
     return false;
+  
+  // 清除现有地图数据，准备存储新的共享姿态信息
   map.clear();
+  
+  // 确保对共享姿态数据的访问是线程安全的
   lock_guard<mutex> lock(mPosesMutex);
+  
+  // 获取与邻居智能体共享的回环测量数据
   std::vector<RelativeSEMeasurement> measurements = mPoseGraph->sharedLoopClosuresWithRobot(neighborID);
+  
+  // 遍历测量数据，根据当前代理的ID，收集相关的姿态信息
   for (const auto &m : measurements) {
     if (m.r1 == getID()) {
-      PoseID pose_id(m.r1, m.p1);
+      // 如果测量数据中的第一个参考ID与当前智能体ID匹配
+      PoseID pose_id(m.r1, m.p1); // 以机器人ID和帧ID创建pose_id
       LiftedPose Yi(Y.pose(m.p1));
       map.emplace(pose_id, Yi);
     } else if (m.r2 == getID()) {
+      // 如果测量数据中的第二个参考ID与当前智能体ID匹配
       PoseID pose_id(m.r2, m.p2);
       LiftedPose Yi(Y.pose(m.p2));
       map.emplace(pose_id, Yi);
     }
   }
+  
+  // 所有操作完成，返回true
   return true;
 }
 
@@ -373,8 +421,15 @@ void PGOAgent::initializeInGlobalFrame(const Pose &T_world_robot) {
   if (optimizationHalted) startOptimizationLoop();
 }
 
+/**
+ * @brief perform a single iteration
+ * @param doOptimization: if true, this robot is selected to perform local optimization at this iteration
+ * @return true if iteration is successful
+ */
 bool PGOAgent::iterate(bool doOptimization) {
+  // Increment the iteration count
   mIterationNumber++;
+  // For non-L2 robust cost types, increment the inner iteration count
   if (mParams.robustCostParams.costType != RobustCostParameters::Type::L2) {
     mRobustOptInnerIter++;
   }
@@ -385,15 +440,18 @@ bool PGOAgent::iterate(bool doOptimization) {
     XPrev = X;
     bool success;
     if (mParams.acceleration) {
+      // Update Nesterov acceleration parameters
       updateGamma();
       updateAlpha();
       updateY();
+      // Perform pose update, with optimization if specified
       success = updateX(doOptimization, true);
       updateV();
-      // Check restart condition
+      // Check restart condition 迭代次数与重启间隔时间的关系
       if (shouldRestart())
         restartNesterovAcceleration(doOptimization);
     } else {
+      // Perform pose update without Nesterov acceleration
       success = updateX(doOptimization, false);
     }
 
@@ -421,13 +479,15 @@ bool PGOAgent::iterate(bool doOptimization) {
       mStatus.readyToTerminate = readyToTerminate;
     }
 
-    // Request to publish public poses
+    // 局部优化或加速模式：Request to publish public poses
     if (doOptimization || mParams.acceleration)
       mPublishPublicPosesRequested = true;
 
     mPublishAsynchronousRequested = true;
+    // Return the success status of this iteration
     return success;
   }
+  // If the state is not INITIALIZED, return true by default, indicating that no iteration was performed
   return true;
 }
 
@@ -812,7 +872,9 @@ bool PGOAgent::getNeighborPoseInGlobalFrame(unsigned int neighborID, unsigned in
 bool PGOAgent::hasNeighbor(unsigned neighborID) const {
   return mPoseGraph->hasNeighbor(neighborID);
 }
-
+/**
+  Get vector of neighbor robot IDs.
+  */
 std::vector<unsigned> PGOAgent::getNeighbors() const {
   auto neighborRobotIDs = mPoseGraph->neighborIDs();
   std::vector<unsigned> v(neighborRobotIDs.size());
@@ -906,19 +968,25 @@ void PGOAgent::initializeAcceleration() {
     Y = X;
   }
 }
-
+/*
+ * 更新加速的参数：gamma_k Yulun Tian Ph.D. 大论文公式(4.27) 
+*/
 void PGOAgent::updateGamma() {
   CHECK(mParams.acceleration);
   CHECK(mState == PGOAgentState::INITIALIZED);
   gamma = (1 + sqrt(1 + 4 * pow(mParams.numRobots, 2) * pow(gamma, 2))) / (2 * mParams.numRobots);
 }
-
+/*
+ * 更新加速的参数：alpha_k Yulun Tian Ph.D. 大论文公式(4.28) 
+*/
 void PGOAgent::updateAlpha() {
   CHECK(mParams.acceleration);
   CHECK(mState == PGOAgentState::INITIALIZED);
   alpha = 1 / (gamma * mParams.numRobots);
 }
-
+/*
+ * 更新加速的参数：y^k Yulun Tian Ph.D. 大论文公式(4.29) 
+*/
 void PGOAgent::updateY() {
   CHECK(mParams.acceleration);
   CHECK(mState == PGOAgentState::INITIALIZED);
@@ -926,7 +994,9 @@ void PGOAgent::updateY() {
   Matrix M = (1 - alpha) * X.getData() + alpha * V.getData();
   Y.setData(manifold.project(M));
 }
-
+/*
+ * 更新加速的参数：v^{k+1} Yulun Tian Ph.D. 大论文公式(4.31) 
+*/
 void PGOAgent::updateV() {
   CHECK(mParams.acceleration);
   CHECK(mState == PGOAgentState::INITIALIZED);
@@ -934,7 +1004,9 @@ void PGOAgent::updateV() {
   Matrix M = V.getData() + gamma * (X.getData() - Y.getData());
   V.setData(manifold.project(M));
 }
-
+/*
+ * 更新加速的参数：x^{k+1} Yulun Tian Ph.D. 大论文公式(4.30) 
+*/
 bool PGOAgent::updateX(bool doOptimization, bool acceleration) {
   // Lock during local optimization
   unique_lock<mutex> tLock(mPosesMutex);

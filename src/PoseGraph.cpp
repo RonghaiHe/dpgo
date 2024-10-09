@@ -302,12 +302,15 @@ std::vector<RelativeSEMeasurement *> PoseGraph::inactiveLoopClosures() {
   return output;
 }
 
+// Calculates and returns the statistics of loop closures in the pose graph
+// This function provides statistics on the total number of loop closures, the number of accepted and rejected loop closures
 PoseGraph::Statistics PoseGraph::statistics() const {
   // Currently, this function is only meaningful for GNC_TLS
   double totalCount = 0;
   double acceptCount = 0;
   double rejectCount = 0;
   // TODO: specify tolerance for rejected and accepted loop closures
+  // Iterate through private loop closures and update statistics based on weight
   for (const auto &m : private_lcs_) {
     // if (m.fixedWeight) continue;
     if (m.weight == 1) {
@@ -317,6 +320,7 @@ PoseGraph::Statistics PoseGraph::statistics() const {
     }
     totalCount += 1;
   }
+  // Iterate through shared loop closures, skip those with inactive neighbors, and update statistics based on weight
   for (const auto &m : shared_lcs_) {
     // Skip loop closures with inactive neighbors
     if (m.r1 == id_ && !isNeighborActive(m.r2)) {
@@ -333,12 +337,14 @@ PoseGraph::Statistics PoseGraph::statistics() const {
     totalCount += 1;
   }
 
+  // Initialize statistics object to store and return statistics
   PoseGraph::Statistics statistics;
   statistics.total_loop_closures = totalCount;
   statistics.accept_loop_closures = acceptCount;
   statistics.reject_loop_closures = rejectCount;
   statistics.undecided_loop_closures = totalCount - acceptCount - rejectCount;
 
+  // Return the statistics
   return statistics;
 }
 
