@@ -12,13 +12,19 @@ using namespace std;
 using namespace ROPTLIB;
 
 namespace DPGO {
-LiftedSEVariable::LiftedSEVariable(unsigned int r, unsigned int d, unsigned int n) :
-    r_(r), d_(d), n_(n),
-    rotation_var_(std::make_unique<ROPTLIB::StieVariable>((int) r, (int) d)),
-    translation_var_(std::make_unique<ROPTLIB::EucVariable>((int) r)),
-    pose_var_(std::make_unique<ROPTLIB::ProductElement>(2, rotation_var_.get(), 1, translation_var_.get(), 1)),
-    var_(std::make_unique<ROPTLIB::ProductElement>(1, pose_var_.get(), n)),
-    X_((double *) var_->ObtainWriteEntireData(), r, (d + 1) * n) {
+LiftedSEVariable::LiftedSEVariable(unsigned int r, unsigned int d, unsigned int n)
+    : r_(r),
+      d_(d),
+      n_(n),
+      rotation_var_(std::make_unique<ROPTLIB::StieVariable>((int)r, (int)d)),
+      translation_var_(std::make_unique<ROPTLIB::EucVariable>((int)r)),
+      pose_var_(std::make_unique<ROPTLIB::ProductElement>(2,
+                                                          rotation_var_.get(),
+                                                          1,
+                                                          translation_var_.get(),
+                                                          1)),
+      var_(std::make_unique<ROPTLIB::ProductElement>(1, pose_var_.get(), n)),
+      X_((double *)var_->ObtainWriteEntireData(), r, (d + 1) * n) {
   Matrix Yinit = Matrix::Zero(r_, d_);
   Yinit.block(0, 0, d_, d_) = Matrix::Identity(d_, d_);
   for (unsigned int i = 0; i < n; ++i) {
@@ -32,8 +38,8 @@ LiftedSEVariable::LiftedSEVariable(const LiftedPoseArray &poses)
   setData(poses.getData());
 }
 
-LiftedSEVariable::LiftedSEVariable(const LiftedSEVariable &other) :
-    LiftedSEVariable(other.r(), other.d(), other.n()) {
+LiftedSEVariable::LiftedSEVariable(const LiftedSEVariable &other)
+    : LiftedSEVariable(other.r(), other.d(), other.n()) {
   setData(other.getData());
 }
 
@@ -41,20 +47,21 @@ LiftedSEVariable &LiftedSEVariable::operator=(const LiftedSEVariable &other) {
   r_ = other.r();
   d_ = other.d();
   n_ = other.n();
-  rotation_var_ = std::make_unique<ROPTLIB::StieVariable>((int) r_, (int) d_);
-  translation_var_ = std::make_unique<ROPTLIB::EucVariable>((int) r_);
-  pose_var_ = std::make_unique<ROPTLIB::ProductElement>(2, rotation_var_.get(), 1, translation_var_.get(), 1);
+  rotation_var_ = std::make_unique<ROPTLIB::StieVariable>((int)r_, (int)d_);
+  translation_var_ = std::make_unique<ROPTLIB::EucVariable>((int)r_);
+  pose_var_ = std::make_unique<ROPTLIB::ProductElement>(
+      2, rotation_var_.get(), 1, translation_var_.get(), 1);
   var_ = std::make_unique<ROPTLIB::ProductElement>(1, pose_var_.get(), n_);
   // Update the Eigen::Map object using the "placement new object"
-  // Reference: https://eigen.tuxfamily.org/dox/group__TutorialMapClass.html#TutorialMapPlacementNew
-  new(&X_) Eigen::Map<Matrix>((double *) var_->ObtainWriteEntireData(), r_, (d_ + 1) * n_);
+  // Reference:
+  // https://eigen.tuxfamily.org/dox/group__TutorialMapClass.html#TutorialMapPlacementNew
+  new (&X_)
+      Eigen::Map<Matrix>((double *)var_->ObtainWriteEntireData(), r_, (d_ + 1) * n_);
   setData(other.getData());
   return *this;
 }
 
-Matrix LiftedSEVariable::getData() const {
-  return X_;
-}
+Matrix LiftedSEVariable::getData() const { return X_; }
 
 void LiftedSEVariable::setData(const Matrix &X) {
   CHECK(X.rows() == r_);

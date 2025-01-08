@@ -6,9 +6,9 @@
  * -------------------------------------------------------------------------- */
 
 #include <DPGO/DPGO_robust.h>
+#include <DPGO/DPGO_utils.h>
 
 #include <cmath>
-#include <DPGO/DPGO_utils.h>
 
 using namespace std;
 
@@ -46,8 +46,8 @@ std::string RobustCostParameters::robustCostName(RobustCostParameters::Type type
   return name;
 }
 
-RobustCost::RobustCost(const RobustCostParameters &params) :
-    mParams(params), mu(params.GNCInitMu) {
+RobustCost::RobustCost(const RobustCostParameters &params)
+    : mParams(params), mu(params.GNCInitMu) {
   reset();
 }
 
@@ -92,7 +92,8 @@ double RobustCost::weight(double r) const {
       }
     }
     default: {
-      throw std::runtime_error("weight function for selected cost function is not implemented !");
+      throw std::runtime_error(
+          "weight function for selected cost function is not implemented !");
     }
   }
 }
@@ -110,7 +111,6 @@ void RobustCost::reset() {
       break;
     }
   }
-
 }
 
 void RobustCost::update() {

@@ -7,6 +7,7 @@
 
 #include <DPGO/QuadraticOptimizer.h>
 #include <glog/logging.h>
+
 #include <iostream>
 
 #include "RSD.h"
@@ -16,8 +17,7 @@
 namespace DPGO {
 
 QuadraticOptimizer::QuadraticOptimizer(QuadraticProblem *p, ROptParameters params)
-    : problem_(p),
-      params_(params) {
+    : problem_(p), params_(params) {
   result_.success = false;
 }
 
@@ -63,10 +63,11 @@ Matrix QuadraticOptimizer::trustRegion(const Matrix &Yinit) {
   VarInit.var()->NewMemoryOnWrite();
   ROPTLIB::RTRNewton Solver(problem_, VarInit.var());
   Solver.Stop_Criterion =
-      ROPTLIB::StopCrit::GRAD_F;                                               // Stopping criterion based on absolute gradient norm
-  Solver.Tolerance = params_.gradnorm_tol;                               // Tolerance associated with stopping criterion
-  Solver.initial_Delta = params_.RTR_initial_radius;                         // Trust-region radius
-  Solver.maximum_Delta = 5 * Solver.initial_Delta;                             // Maximum trust-region radius
+      ROPTLIB::StopCrit::GRAD_F;  // Stopping criterion based on absolute gradient norm
+  Solver.Tolerance =
+      params_.gradnorm_tol;  // Tolerance associated with stopping criterion
+  Solver.initial_Delta = params_.RTR_initial_radius;  // Trust-region radius
+  Solver.maximum_Delta = 5 * Solver.initial_Delta;    // Maximum trust-region radius
   if (params_.verbose) {
     Solver.Debug = ROPTLIB::DEBUGINFO::ITERRESULT;
   } else {
@@ -128,9 +129,10 @@ Matrix QuadraticOptimizer::gradientDescent(const Matrix &Yinit) {
   if (params_.RGD_use_preconditioner) {
     problem_->PreConditioner(VarInit.var(), RGrad.vec(), RGrad.vec());
   }
-  
+
   // Update
-  M.getManifold()->ScaleTimesVector(VarInit.var(), -params_.RGD_stepsize, RGrad.vec(), RGrad.vec());
+  M.getManifold()->ScaleTimesVector(
+      VarInit.var(), -params_.RGD_stepsize, RGrad.vec(), RGrad.vec());
   M.getManifold()->Retraction(VarInit.var(), RGrad.vec(), VarNext.var());
 
   return VarNext.getData();

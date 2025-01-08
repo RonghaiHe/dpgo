@@ -82,37 +82,43 @@ class LiftedSEVariable {
    */
   void setData(const Matrix &X);
   /**
-   * @brief Obtain the writable pose at the specified index, expressed as an r-by-(d+1) matrix
+   * @brief Obtain the writable pose at the specified index, expressed as an r-by-(d+1)
+   * matrix
    * @param index
    * @return
    */
   Eigen::Ref<Matrix> pose(unsigned int index);
   /**
-   * @brief Obtain the read-only pose at the specified index, expressed as an r-by-(d+1) matrix
+   * @brief Obtain the read-only pose at the specified index, expressed as an r-by-(d+1)
+   * matrix
    * @param index
    * @return
    */
   Matrix pose(unsigned int index) const;
   /**
-   * @brief Obtain the writable rotation at the specified index, expressed as an r-by-d matrix
+   * @brief Obtain the writable rotation at the specified index, expressed as an r-by-d
+   * matrix
    * @param index
    * @return
    */
   Eigen::Ref<Matrix> rotation(unsigned int index);
   /**
-   * @brief Obtain the read-only rotation at the specified index, expressed as an r-by-d matrix
+   * @brief Obtain the read-only rotation at the specified index, expressed as an r-by-d
+   * matrix
    * @param index
    * @return
    */
   Matrix rotation(unsigned int index) const;
   /**
-   * @brief Obtain the writable translation at the specified index, expressed as an r dimensional vector
+   * @brief Obtain the writable translation at the specified index, expressed as an r
+   * dimensional vector
    * @param index
    * @return
    */
   Eigen::Ref<Vector> translation(unsigned int index);
   /**
-   * @brief Obtain the read-only translation at the specified index, expressed as an r dimensional vector
+   * @brief Obtain the read-only translation at the specified index, expressed as an r
+   * dimensional vector
    * @param index
    * @return
    */

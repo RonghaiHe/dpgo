@@ -5,9 +5,10 @@
  * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
 #include <DPGO/PGOLogger.h>
+#include <glog/logging.h>
+
 #include <Eigen/Geometry>
 #include <utility>
-#include <glog/logging.h>
 
 namespace DPGO {
 
@@ -15,7 +16,8 @@ PGOLogger::PGOLogger(std::string logDir) : logDirectory(std::move(logDir)) {}
 
 PGOLogger::~PGOLogger() = default;
 
-void PGOLogger::logMeasurements(std::vector<RelativeSEMeasurement> &measurements, const std::string &filename) {
+void PGOLogger::logMeasurements(std::vector<RelativeSEMeasurement> &measurements,
+                                const std::string &filename) {
   if (measurements.empty()) return;
 
   std::ofstream file;
@@ -26,9 +28,10 @@ void PGOLogger::logMeasurements(std::vector<RelativeSEMeasurement> &measurements
   if (d == 2) return;
 
   // Insert header row
-  file << "robot_src,pose_src,robot_dst,pose_dst,qx,qy,qz,qw,tx,ty,tz,kappa,tau,is_known_inlier,weight\n";
+  file << "robot_src,pose_src,robot_dst,pose_dst,qx,qy,qz,qw,tx,ty,tz,kappa,tau,is_"
+          "known_inlier,weight\n";
 
-  for (RelativeSEMeasurement m: measurements) {
+  for (RelativeSEMeasurement m : measurements) {
     // Convert rotation matrix to quaternion
     Eigen::Matrix3d R = m.R;
     Eigen::Quaternion<double> quat(R);
@@ -52,7 +55,10 @@ void PGOLogger::logMeasurements(std::vector<RelativeSEMeasurement> &measurements
   file.close();
 }
 
-void PGOLogger::logTrajectory(unsigned int d, unsigned int n, const Matrix &T, const std::string &filename) {
+void PGOLogger::logTrajectory(unsigned int d,
+                              unsigned int n,
+                              const Matrix &T,
+                              const std::string &filename) {
   if (d == 2) return;
   CHECK_EQ(T.rows(), d);
   CHECK_EQ(T.cols(), (d + 1) * n);
@@ -82,7 +88,8 @@ void PGOLogger::logTrajectory(unsigned int d, unsigned int n, const Matrix &T, c
 
 Matrix PGOLogger::loadTrajectory(const std::string &filename) {
   std::ifstream infile(logDirectory + filename);
-  std::cout << "Loading trajectory from " << logDirectory + filename << "..." << std::endl;
+  std::cout << "Loading trajectory from " << logDirectory + filename << "..."
+            << std::endl;
   if (!infile.is_open()) {
     std::cout << "Could not open specified file!" << std::endl;
     return Matrix(0, 0);
@@ -145,7 +152,9 @@ Matrix PGOLogger::loadTrajectory(const std::string &filename) {
   return T;
 }
 
-std::vector<RelativeSEMeasurement> PGOLogger::loadMeasurements(const std::string &filename, bool load_weight) {
+std::vector<RelativeSEMeasurement> PGOLogger::loadMeasurements(
+    const std::string &filename,
+    bool load_weight) {
   std::vector<RelativeSEMeasurement> measurements;
   std::cout << "Loading measurements from " << filename << "..." << std::endl;
   std::ifstream infile(filename);
@@ -210,12 +219,16 @@ std::vector<RelativeSEMeasurement> PGOLogger::loadMeasurements(const std::string
     std::getline(ss, token, ',');
     weight = std::stod(token);
 
-    RelativeSEMeasurement m(robot_src, robot_dst, pose_src, pose_dst,
-                            quat.toRotationMatrix(), tVec,
-                            kappa, tau);
+    RelativeSEMeasurement m(robot_src,
+                            robot_dst,
+                            pose_src,
+                            pose_dst,
+                            quat.toRotationMatrix(),
+                            tVec,
+                            kappa,
+                            tau);
     m.fixedWeight = fixed_weight;
-    if (load_weight)
-      m.weight = weight;
+    if (load_weight) m.weight = weight;
 
     measurements.push_back(m);
   }
@@ -224,4 +237,4 @@ std::vector<RelativeSEMeasurement> PGOLogger::loadMeasurements(const std::string
   return measurements;
 }
 
-}
+}  // namespace DPGO

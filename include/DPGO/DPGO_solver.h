@@ -8,8 +8,8 @@
 #ifndef DPGO_INCLUDE_DPGO_PGOSOLVER_H_
 #define DPGO_INCLUDE_DPGO_PGOSOLVER_H_
 
-#include <DPGO/DPGO_utils.h>
 #include <DPGO/DPGO_robust.h>
+#include <DPGO/DPGO_utils.h>
 #include <DPGO/manifold/Poses.h>
 
 namespace DPGO {
@@ -42,7 +42,8 @@ void singleRotationAveraging(Matrix &ROpt,
  * @param kappa
  * @param tau
  */
-void singlePoseAveraging(Matrix &ROpt, Vector &tOpt,
+void singlePoseAveraging(Matrix &ROpt,
+                         Vector &tOpt,
                          const std::vector<Matrix> &RVec,
                          const std::vector<Vector> &tVec,
                          const Vector &kappa = Vector::Ones(0),
@@ -73,7 +74,8 @@ void robustSingleRotationAveraging(Matrix &ROpt,
  * @param tau
  * @param errorThreshold max error threshold under Langevin noise distribution
  */
-void robustSinglePoseAveraging(Matrix &ROpt, Vector &tOpt,
+void robustSinglePoseAveraging(Matrix &ROpt,
+                               Vector &tOpt,
                                std::vector<size_t> &inlierIndices,
                                const std::vector<Matrix> &RVec,
                                const std::vector<Vector> &tVec,
@@ -84,7 +86,8 @@ void robustSinglePoseAveraging(Matrix &ROpt, Vector &tOpt,
 /**
  * @brief Initialize local trajectory estimate from chordal relaxation
  * @param measurements
- * @return trajectory estimate in matrix form T = [R1 t1 ... Rn tn] in an arbitrary frame
+ * @return trajectory estimate in matrix form T = [R1 t1 ... Rn tn] in an arbitrary
+ * frame
  */
 PoseArray chordalInitialization(const std::vector<RelativeSEMeasurement> &measurements);
 
@@ -96,9 +99,8 @@ PoseArray chordalInitialization(const std::vector<RelativeSEMeasurement> &measur
  * @return trajectory estimate in matrix form T = [R1 t1 ... Rn tn] in an
  * arbitrary frame
  */
-PoseArray odometryInitialization(
-    const std::vector<RelativeSEMeasurement> &odometry,
-    const PoseArray *partial_trajectory = nullptr);
+PoseArray odometryInitialization(const std::vector<RelativeSEMeasurement> &odometry,
+                                 const PoseArray *partial_trajectory = nullptr);
 
 /**
  * @brief Perform single-robot pose graph optimization using the L2 cost function
@@ -116,14 +118,15 @@ struct solveRobustPGOParams {
   ROptParameters opt_params;
   RobustCostParameters robust_params;
   bool verbose;
-  solveRobustPGOParams() :
-      opt_params(),
-      robust_params(RobustCostParameters::Type::GNC_TLS),
-      verbose(true) {}
+  solveRobustPGOParams()
+      : opt_params(),
+        robust_params(RobustCostParameters::Type::GNC_TLS),
+        verbose(true) {}
 };
 
 /**
- * @brief Perform single-robot pose graph optimization using graduated non-convexity (GNC)
+ * @brief Perform single-robot pose graph optimization using graduated non-convexity
+ * (GNC)
  * @param mutable_measurements
  * @param params
  * @param T0
@@ -133,6 +136,6 @@ PoseArray solveRobustPGO(std::vector<RelativeSEMeasurement> &mutable_measurement
                          const solveRobustPGOParams &params,
                          const PoseArray *T0 = nullptr);
 
-}
+}  // namespace DPGO
 
-#endif //DPGO_INCLUDE_DPGO_PGOSOLVER_H_
+#endif  // DPGO_INCLUDE_DPGO_PGOSOLVER_H_

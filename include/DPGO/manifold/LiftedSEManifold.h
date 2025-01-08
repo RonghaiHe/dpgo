@@ -10,6 +10,7 @@
 
 #include <DPGO/DPGO_types.h>
 #include <DPGO/manifold/Poses.h>
+
 #include "Manifolds/Euclidean/Euclidean.h"
 #include "Manifolds/ProductManifold.h"
 #include "Manifolds/Stiefel/Stiefel.h"

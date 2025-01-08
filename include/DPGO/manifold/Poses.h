@@ -9,6 +9,7 @@
 #define DPGO_INCLUDE_DPGO_MANIFOLD_POSES_H_
 
 #include <set>
+
 #include "DPGO/DPGO_types.h"
 
 namespace DPGO {
@@ -57,37 +58,43 @@ class LiftedPoseArray {
    */
   void checkData() const;
   /**
-   * @brief Obtain the writable pose at the specified index, expressed as an r-by-(d+1) matrix
+   * @brief Obtain the writable pose at the specified index, expressed as an r-by-(d+1)
+   * matrix
    * @param index
    * @return
    */
   Eigen::Ref<Matrix> pose(unsigned int index);
   /**
-   * @brief Obtain the read-only pose at the specified index, expressed as an r-by-(d+1) matrix
+   * @brief Obtain the read-only pose at the specified index, expressed as an r-by-(d+1)
+   * matrix
    * @param index
    * @return
    */
   Matrix pose(unsigned int index) const;
   /**
-   * @brief Obtain the writable rotation at the specified index, expressed as an r-by-d matrix
+   * @brief Obtain the writable rotation at the specified index, expressed as an r-by-d
+   * matrix
    * @param index
    * @return
    */
   Eigen::Ref<Matrix> rotation(unsigned int index);
   /**
-   * @brief Obtain the read-only rotation at the specified index, expressed as an r-by-d matrix
+   * @brief Obtain the read-only rotation at the specified index, expressed as an r-by-d
+   * matrix
    * @param index
    * @return
    */
   Matrix rotation(unsigned int index) const;
   /**
-   * @brief Obtain the writable translation at the specified index, expressed as an r dimensional vector
+   * @brief Obtain the writable translation at the specified index, expressed as an r
+   * dimensional vector
    * @param index
    * @return
    */
   Eigen::Ref<Vector> translation(unsigned int index);
   /**
-   * @brief Obtain the read-only translation at the specified index, expressed as an r dimensional vector
+   * @brief Obtain the read-only translation at the specified index, expressed as an r
+   * dimensional vector
    * @param index
    * @return
    */
@@ -99,7 +106,8 @@ class LiftedPoseArray {
    * @param poses2
    * @return
    */
-  static double averageTranslationDistance(const LiftedPoseArray &poses1, const LiftedPoseArray &poses2);
+  static double averageTranslationDistance(const LiftedPoseArray &poses1,
+                                           const LiftedPoseArray &poses2);
   /**
    * @brief Compute the max translation distance between two lifted pose arrays
    * Internally check that both arrays should have same dimension and number of poses
@@ -107,7 +115,8 @@ class LiftedPoseArray {
    * @param poses2
    * @return
    */
-  static double maxTranslationDistance(const LiftedPoseArray &poses1, const LiftedPoseArray &poses2);
+  static double maxTranslationDistance(const LiftedPoseArray &poses1,
+                                       const LiftedPoseArray &poses2);
 
  protected:
   // Dimension constants
@@ -138,8 +147,9 @@ class LiftedPose : public LiftedPoseArray {
    * @brief Constructor from Eigen matrix
    * @param X r by d+1 matrix X = [Y p]
    */
-  explicit LiftedPose(const Matrix &X) :
-      LiftedPose(X.rows(), X.cols() - 1) { setData(X); }
+  explicit LiftedPose(const Matrix &X) : LiftedPose(X.rows(), X.cols() - 1) {
+    setData(X);
+  }
   /**
    * @brief Return the writable pose
    * @return
@@ -219,5 +229,5 @@ typedef std::map<PoseID, LiftedPose, ComparePoseID> PoseDict;
 // Ordered set of PoseID
 typedef std::set<PoseID, ComparePoseID> PoseSet;
 
-}
-#endif //DPGO_INCLUDE_DPGO_MANIFOLD_POSES_H_
+}  // namespace DPGO
+#endif  // DPGO_INCLUDE_DPGO_MANIFOLD_POSES_H_

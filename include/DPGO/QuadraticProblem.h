@@ -9,16 +9,16 @@
 #define QUADRATICPROBLEM_H
 
 #include <DPGO/DPGO_types.h>
+#include <DPGO/PoseGraph.h>
 #include <DPGO/manifold/LiftedSEManifold.h>
 #include <DPGO/manifold/LiftedSEVariable.h>
 #include <DPGO/manifold/LiftedSEVector.h>
-#include <DPGO/PoseGraph.h>
 
 #include <Eigen/CholmodSupport>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "Problems/Problem.h"
 
@@ -34,9 +34,10 @@ class QuadraticProblem : public ROPTLIB::Problem {
  public:
   /**
    * @brief Construct a quadratic optimization problem from a pose graph
-   * @param pose_graph input pose graph must be initialized (or can be initialized) otherwise throw an runtime error
+   * @param pose_graph input pose graph must be initialized (or can be initialized)
+   * otherwise throw an runtime error
    */
-  explicit QuadraticProblem(const std::shared_ptr<PoseGraph>& pose_graph);
+  explicit QuadraticProblem(const std::shared_ptr<PoseGraph> &pose_graph);
 
   ~QuadraticProblem() override;
 
@@ -76,7 +77,8 @@ class QuadraticProblem : public ROPTLIB::Problem {
    * @param v
    * @param Hv
    */
-  void EucHessianEta(ROPTLIB::Variable *x, ROPTLIB::Vector *v,
+  void EucHessianEta(ROPTLIB::Variable *x,
+                     ROPTLIB::Vector *v,
                      ROPTLIB::Vector *Hv) const override;
 
   /**
@@ -85,7 +87,8 @@ class QuadraticProblem : public ROPTLIB::Problem {
    * @param inVec
    * @param outVec
    */
-  void PreConditioner(ROPTLIB::Variable *x, ROPTLIB::Vector *inVec,
+  void PreConditioner(ROPTLIB::Variable *x,
+                      ROPTLIB::Vector *inVec,
                       ROPTLIB::Vector *outVec) const override;
 
   /**

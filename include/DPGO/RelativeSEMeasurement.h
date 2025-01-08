@@ -1,3 +1,15 @@
+/*
+ * Copyright © 2025, Sun Yat-sen University, Guangzhou, Guangdong, 510275, All Rights
+ * Reserved
+ * @Author: Ronghai He
+ * @Date: 2025-01-08 20:07:51
+ * @LastEditors: RonghaiHe hrhkjys@qq.com
+ * @LastEditTime: 2025-01-08 20:07:52
+ * @FilePath: /src/dpgo/include/DPGO/RelativeSEMeasurement.h
+ * @Version:
+ * @Description:
+ *
+ */
 /* ----------------------------------------------------------------------------
  * Copyright 2020, Massachusetts Institute of Technology, * Cambridge, MA 02139
  * All Rights Reserved
@@ -53,8 +65,10 @@ struct RelativeSEMeasurement {
   RelativeSEMeasurement() = default;
 
   /** Basic constructor */
-  RelativeSEMeasurement(size_t first_robot, size_t second_robot,
-                        size_t first_pose, size_t second_pose,
+  RelativeSEMeasurement(size_t first_robot,
+                        size_t second_robot,
+                        size_t first_pose,
+                        size_t second_pose,
                         const Eigen::MatrixXd &relative_rotation,
                         const Eigen::VectorXd &relative_translation,
                         double rotational_precision,
@@ -71,8 +85,8 @@ struct RelativeSEMeasurement {
         weight(1.0) {}
 
   /** A utility function for streaming this struct to cout */
-  inline friend std::ostream &operator<<(
-      std::ostream &os, const RelativeSEMeasurement &measurement) {
+  inline friend std::ostream &operator<<(std::ostream &os,
+                                         const RelativeSEMeasurement &measurement) {
     os << "r1: " << measurement.r1 << std::endl;
     os << "p1: " << measurement.p1 << std::endl;
     os << "r2: " << measurement.r2 << std::endl;

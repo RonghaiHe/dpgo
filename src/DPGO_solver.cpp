@@ -5,25 +5,26 @@
  * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
 
-#include <DPGO/DPGO_solver.h>
 #include <DPGO/DPGO_robust.h>
+#include <DPGO/DPGO_solver.h>
 #include <DPGO/PoseGraph.h>
 #include <DPGO/QuadraticOptimizer.h>
+#include <glog/logging.h>
+
 #include <Eigen/Geometry>
 #include <Eigen/SPQRSupport>
 #include <algorithm>
+#include <boost/math/distributions/chi_squared.hpp>
 #include <fstream>
 #include <iostream>
 #include <random>
-#include <boost/math/distributions/chi_squared.hpp>
-#include <glog/logging.h>
 
 namespace DPGO {
 
 void singleTranslationAveraging(Vector &tOpt,
                                 const std::vector<Vector> &tVec,
                                 const Vector &tau) {
-  const int n = (int) tVec.size();
+  const int n = (int)tVec.size();
   CHECK(n > 0);
   const auto d = tVec[0].rows();
   Vector tau_ = Vector::Ones(n);
@@ -42,7 +43,7 @@ void singleTranslationAveraging(Vector &tOpt,
 void singleRotationAveraging(Matrix &ROpt,
                              const std::vector<Matrix> &RVec,
                              const Vector &kappa) {
-  const int n = (int) RVec.size();
+  const int n = (int)RVec.size();
   CHECK(n > 0);
   const auto d = RVec[0].rows();
   Vector kappa_ = Vector::Ones(n);
@@ -56,7 +57,8 @@ void singleRotationAveraging(Matrix &ROpt,
   ROpt = projectToRotationGroup(M);
 }
 
-void singlePoseAveraging(Matrix &ROpt, Vector &tOpt,
+void singlePoseAveraging(Matrix &ROpt,
+                         Vector &tOpt,
                          const std::vector<Matrix> &RVec,
                          const std::vector<Vector> &tVec,
                          const Vector &kappa,
@@ -75,7 +77,7 @@ void robustSingleRotationAveraging(Matrix &ROpt,
                                    const Vector &kappa,
                                    double errorThreshold) {
   const double w_tol = 1e-8;
-  const int n = (int) RVec.size();
+  const int n = (int)RVec.size();
   CHECK(n > 0);
   Vector kappa_ = Vector::Ones(n);
   Vector weights_ = Vector::Ones(n);
@@ -96,7 +98,8 @@ void robustSingleRotationAveraging(Matrix &ROpt,
   double barcSq = barc * barc;
   double muInit = barcSq / (2 * rSqVec.maxCoeff() - barcSq);
   muInit = std::min(muInit, 1e-5);
-  // Negative values of initial mu corresponds to small residual errors. In this case skip applying GNC.
+  // Negative values of initial mu corresponds to small residual errors. In this case
+  // skip applying GNC.
   if (muInit > 0) {
     RobustCostParameters params;
     params.costType = RobustCostParameters::Type::GNC_TLS;
@@ -134,7 +137,8 @@ void robustSingleRotationAveraging(Matrix &ROpt,
   }
 }
 
-void robustSinglePoseAveraging(Matrix &ROpt, Vector &tOpt,
+void robustSinglePoseAveraging(Matrix &ROpt,
+                               Vector &tOpt,
                                std::vector<size_t> &inlierIndices,
                                const std::vector<Matrix> &RVec,
                                const std::vector<Vector> &tVec,
@@ -142,7 +146,7 @@ void robustSinglePoseAveraging(Matrix &ROpt, Vector &tOpt,
                                const Vector &tau,
                                double errorThreshold) {
   const double w_tol = 1e-8;
-  const int n = (int) RVec.size();
+  const int n = (int)RVec.size();
   CHECK(n > 0);
   CHECK(tVec.size() == RVec.size());
   Vector kappa_ = 10000 * Vector::Ones(n);
@@ -166,14 +170,16 @@ void robustSinglePoseAveraging(Matrix &ROpt, Vector &tOpt,
                       tau_.cwiseProduct(weights_));
   Vector rSqVec = Vector::Zero(n);
   for (Eigen::Index i = 0; i < n; ++i) {
-    rSqVec(i) = kappa_(i) * (ROpt - RVec[i]).squaredNorm() + tau_(i) * (tOpt - tVec[i]).squaredNorm();
+    rSqVec(i) = kappa_(i) * (ROpt - RVec[i]).squaredNorm() +
+                tau_(i) * (tOpt - tVec[i]).squaredNorm();
   }
   // Initialize robust cost
   double barc = errorThreshold;
   double barcSq = barc * barc;
   double muInit = barcSq / (2 * rSqVec.maxCoeff() - barcSq);
   muInit = std::min(muInit, 1e-5);
-  // Negative values of initial mu corresponds to small residual errors. In this case skip applying GNC.
+  // Negative values of initial mu corresponds to small residual errors. In this case
+  // skip applying GNC.
   if (muInit > 0) {
     RobustCostParameters params;
     params.costType = RobustCostParameters::Type::GNC_TLS;
@@ -193,7 +199,8 @@ void robustSinglePoseAveraging(Matrix &ROpt, Vector &tOpt,
       // Update weight
       int nc = 0;
       for (Eigen::Index i = 0; i < n; ++i) {
-        double rSq = kappa_(i) * (ROpt - RVec[i]).squaredNorm() + tau_(i) * (tOpt - tVec[i]).squaredNorm();
+        double rSq = kappa_(i) * (ROpt - RVec[i]).squaredNorm() +
+                     tau_(i) * (tOpt - tVec[i]).squaredNorm();
         double wi = cost.weight(sqrt(rSq));
         if (wi < w_tol || wi > 1 - w_tol) {
           nc++;
@@ -217,7 +224,8 @@ void robustSinglePoseAveraging(Matrix &ROpt, Vector &tOpt,
   }
 }
 
-PoseArray chordalInitialization(const std::vector<RelativeSEMeasurement> &measurements) {
+PoseArray chordalInitialization(
+    const std::vector<RelativeSEMeasurement> &measurements) {
   size_t dimension, num_poses;
   get_dimension_and_num_poses(measurements, dimension, num_poses);
   SparseMatrix B1, B2, B3;
@@ -227,7 +235,7 @@ PoseArray chordalInitialization(const std::vector<RelativeSEMeasurement> &measur
   size_t d = (!measurements.empty() ? measurements[0].t.size() : 0);
   unsigned int d2 = d * d;
   CHECK(dimension == d);
-  CHECK(num_poses == (unsigned) B3.cols() / d2);
+  CHECK(num_poses == (unsigned)B3.cols() / d2);
 
   SparseMatrix B3red = B3.rightCols((num_poses - 1) * d2);
   B3red.makeCompressed();  // Must be in compressed format to use
@@ -253,8 +261,8 @@ PoseArray chordalInitialization(const std::vector<RelativeSEMeasurement> &measur
 
   // Recover translation
   Matrix tchordal = recoverTranslations(B1, B2, Rchordal);
-  CHECK((unsigned) tchordal.rows() == dimension);
-  CHECK((unsigned) tchordal.cols() == num_poses);
+  CHECK((unsigned)tchordal.rows() == dimension);
+  CHECK((unsigned)tchordal.cols() == num_poses);
 
   // Assemble full pose
   Matrix Tchordal(d, num_poses * (d + 1));
@@ -268,9 +276,8 @@ PoseArray chordalInitialization(const std::vector<RelativeSEMeasurement> &measur
   return output;
 }
 
-PoseArray odometryInitialization(
-    const std::vector<RelativeSEMeasurement> &odometry,
-    const PoseArray *partial_trajectory) {
+PoseArray odometryInitialization(const std::vector<RelativeSEMeasurement> &odometry,
+                                 const PoseArray *partial_trajectory) {
   size_t dimension, num_poses;
   get_dimension_and_num_poses(odometry, dimension, num_poses);
 
@@ -305,7 +312,6 @@ PoseArray odometryInitialization(
 PoseArray solvePGO(const std::vector<RelativeSEMeasurement> &measurements,
                    const ROptParameters &params,
                    const PoseArray *T0) {
-
   size_t dimension, num_poses, robot_id;
   get_dimension_and_num_poses(measurements, dimension, num_poses);
   robot_id = measurements[0].r1;
@@ -338,7 +344,7 @@ PoseArray solveRobustPGO(std::vector<RelativeSEMeasurement> &mutable_measurement
   size_t dimension, num_poses;
   get_dimension_and_num_poses(mutable_measurements, dimension, num_poses);
   const double w_tol = 1e-8;
-  const int m = (int) mutable_measurements.size();
+  const int m = (int)mutable_measurements.size();
   // Initialize estimate
   PoseArray T = solvePGO(mutable_measurements, params.opt_params, T0);
   Vector rSqVec = Vector::Zero(m);
@@ -361,9 +367,9 @@ PoseArray solveRobustPGO(std::vector<RelativeSEMeasurement> &mutable_measurement
   params_gnc = params.robust_params;
   params_gnc.GNCInitMu = muInit;
   // muInit = std::min(muInit, 1e-5);
-  if (params.verbose)
-    LOG(INFO) << "[solveRobustPGO] Initial value for mu: " << muInit;
-  // Negative values of initial mu corresponds to small residual errors. In this case skip applying GNC.
+  if (params.verbose) LOG(INFO) << "[solveRobustPGO] Initial value for mu: " << muInit;
+  // Negative values of initial mu corresponds to small residual errors. In this case
+  // skip applying GNC.
   if (muInit > 0) {
     RobustCost cost(params_gnc);
     unsigned iter = 0;
@@ -386,7 +392,7 @@ PoseArray solveRobustPGO(std::vector<RelativeSEMeasurement> &mutable_measurement
       int num_inliers = 0;
       int num_outliers = 0;
       int num_undecided = 0;
-      for (const auto& meas: mutable_measurements) {
+      for (const auto &meas : mutable_measurements) {
         if (meas.fixedWeight) continue;
         if (meas.weight < w_tol) {
           num_outliers++;
@@ -397,8 +403,9 @@ PoseArray solveRobustPGO(std::vector<RelativeSEMeasurement> &mutable_measurement
         }
       }
       if (params.verbose) {
-        LOG(INFO) << "[solveRobustPGO] Iteration " << iter << ": "
-                  << num_inliers << " inliers, " << num_outliers << " outliers, " << num_undecided << " undecided.";
+        LOG(INFO) << "[solveRobustPGO] Iteration " << iter << ": " << num_inliers
+                  << " inliers, " << num_outliers << " outliers, " << num_undecided
+                  << " undecided.";
       }
       if (num_undecided == 0) {
         break;
@@ -411,4 +418,4 @@ PoseArray solveRobustPGO(std::vector<RelativeSEMeasurement> &mutable_measurement
   return T;
 }
 
-}
+}  // namespace DPGO
