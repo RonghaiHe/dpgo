@@ -572,6 +572,11 @@ class PGOAgent {
   // The unique ID associated to this robot
   unsigned mID;
 
+  // Random number generator
+  std::mt19937 mRng;
+  // Seed for random number generator
+  int mSeed = 42;
+
   // Dimension
   unsigned d;
 
