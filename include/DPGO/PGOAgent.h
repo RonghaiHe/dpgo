@@ -646,6 +646,9 @@ class PGOAgent {
   // Initial solution TInit = [R1 t1 ... Rn tn] in an arbitrary coordinate frame
   std::optional<PoseArray> TLocalInit;
 
+  // tf from local to world frame
+  std::optional<Pose> T_world_robot_;
+
   // Lifting matrix shared by all agents
   std::optional<Matrix> YLift;
 

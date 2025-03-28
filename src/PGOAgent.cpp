@@ -338,6 +338,11 @@ void PGOAgent::initializeInGlobalFrame(const Pose &T_world_robot) {
     T.pose(i) = T_world_frame.pose();
   }
 
+  if (T_world_robot_.has_value()) {
+    T_world_robot_.reset();
+  }
+  T_world_robot_.emplace(T_world_robot);
+
   // Lift back to correct relaxation rank
   X.setData(YLift.value() * T.getData());
   XInit.emplace(X);
@@ -762,6 +767,8 @@ bool PGOAgent::getTrajectoryInGlobalFrame(PoseArray &Trajectory) {
   PoseArray T(d, num_poses());
   T.setData(Xa.rotation().transpose() * X.getData());
   Vector t0 = Xa.rotation().transpose() * Xa.translation();
+  // std::cout << "Trans of traj: " << t0(0) << ',' << t0(1) << ',' << t0(2) <<
+  // std::endl;
 
   // Project each rotation block to the rotation group, and make the first translation
   // zero
