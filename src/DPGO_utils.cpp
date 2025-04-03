@@ -5,16 +5,17 @@
  * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
 
-#include <DPGO/DPGO_utils.h>
 #include <DPGO/DPGO_robust.h>
+#include <DPGO/DPGO_utils.h>
+#include <glog/logging.h>
+
 #include <Eigen/Geometry>
 #include <Eigen/SPQRSupport>
 #include <algorithm>
+#include <boost/math/distributions/chi_squared.hpp>
 #include <fstream>
 #include <iostream>
 #include <random>
-#include <boost/math/distributions/chi_squared.hpp>
-#include <glog/logging.h>
 
 namespace DPGO {
 
@@ -45,9 +46,7 @@ std::string InitializationMethodToString(InitializationMethod method) {
   return "";
 }
 
-void SimpleTimer::tic() {
-  t_start = std::chrono::high_resolution_clock::now();
-}
+void SimpleTimer::tic() { t_start = std::chrono::high_resolution_clock::now(); }
 
 double SimpleTimer::toc() {
   t_end = std::chrono::high_resolution_clock::now();
@@ -60,7 +59,8 @@ std::chrono::time_point<std::chrono::high_resolution_clock> SimpleTimer::Tic() {
   return std::chrono::high_resolution_clock::now();
 }
 
-double SimpleTimer::Toc(const std::chrono::time_point<std::chrono::high_resolution_clock> &start_time) {
+double SimpleTimer::Toc(
+    const std::chrono::time_point<std::chrono::high_resolution_clock> &start_time) {
   auto end_time = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> t_elapsed(0);
   t_elapsed = end_time - start_time;
@@ -74,7 +74,8 @@ void writeMatrixToFile(const Matrix &M, const std::string &filename) {
     printf("Cannot write to specified file: %s\n", filename.c_str());
     return;
   }
-  const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n");
+  const static Eigen::IOFormat CSVFormat(
+      Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n");
   file << M.format(CSVFormat);
   file.close();
 }
@@ -126,8 +127,8 @@ std::vector<RelativeSEMeasurement> read_g2o_file(const std::string &filename,
   std::string token;
 
   // Preallocate various useful quantities
-  double dx, dy, dz, dtheta, dqx, dqy, dqz, dqw, I11, I12, I13, I14, I15, I16,
-      I22, I23, I24, I25, I26, I33, I34, I35, I36, I44, I45, I46, I55, I56, I66;
+  double dx, dy, dz, dtheta, dqx, dqy, dqz, dqw, I11, I12, I13, I14, I15, I16, I22, I23,
+      I24, I25, I26, I33, I34, I35, I36, I44, I45, I46, I55, I56, I66;
 
   size_t i, j;
 
@@ -154,8 +155,7 @@ std::vector<RelativeSEMeasurement> read_g2o_file(const std::string &filename,
        */
 
       // Extract formatted output
-      strstrm >> i >> j >> dx >> dy >> dtheta >> I11 >> I12 >> I13 >> I22 >>
-              I23 >> I33;
+      strstrm >> i >> j >> dx >> dy >> dtheta >> I11 >> I12 >> I13 >> I22 >> I23 >> I33;
 
       // Fill in elements of this measurement
 
@@ -175,7 +175,7 @@ std::vector<RelativeSEMeasurement> read_g2o_file(const std::string &filename,
 
       measurement.kappa = I33;
 
-      if (i+1 == j) {
+      if (i + 1 == j) {
         measurement.fixedWeight = true;
       } else {
         measurement.fixedWeight = false;
@@ -198,9 +198,9 @@ std::vector<RelativeSEMeasurement> read_g2o_file(const std::string &filename,
        */
 
       // Extract formatted output
-      strstrm >> i >> j >> dx >> dy >> dz >> dqx >> dqy >> dqz >> dqw >> I11 >>
-              I12 >> I13 >> I14 >> I15 >> I16 >> I22 >> I23 >> I24 >> I25 >> I26 >>
-              I33 >> I34 >> I35 >> I36 >> I44 >> I45 >> I46 >> I55 >> I56 >> I66;
+      strstrm >> i >> j >> dx >> dy >> dz >> dqx >> dqy >> dqz >> dqw >> I11 >> I12 >>
+          I13 >> I14 >> I15 >> I16 >> I22 >> I23 >> I24 >> I25 >> I26 >> I33 >> I34 >>
+          I35 >> I36 >> I44 >> I45 >> I46 >> I55 >> I56 >> I66;
 
       // Fill in elements of the measurement
 
@@ -229,7 +229,7 @@ std::vector<RelativeSEMeasurement> read_g2o_file(const std::string &filename,
       RotCov << I44, I45, I46, I45, I55, I56, I46, I56, I66;
       measurement.kappa = 3 / (2 * RotCov.inverse().trace());
 
-      if (i+1 == j) {
+      if (i + 1 == j) {
         measurement.fixedWeight = true;
       } else {
         measurement.fixedWeight = false;
@@ -263,73 +263,83 @@ void get_dimension_and_num_poses(const std::vector<RelativeSEMeasurement> &measu
   dimension = measurements[0].t.size();
   CHECK(dimension == 2 || dimension == 3);
   num_poses = 0;
-  for (const auto& meas: measurements) {
+  for (const auto &meas : measurements) {
     num_poses = std::max(num_poses, meas.p1 + 1);
     num_poses = std::max(num_poses, meas.p2 + 1);
   }
 }
 
+// 构建针对SE(d)群的定向连接关联矩阵
 void constructOrientedConnectionIncidenceMatrixSE(
-    const std::vector<RelativeSEMeasurement> &measurements, SparseMatrix &AT,
+    const std::vector<RelativeSEMeasurement> &measurements,
+    SparseMatrix &AT,
     DiagonalMatrix &OmegaT) {
   // Deduce graph dimensions from measurements
-  size_t d;  // Dimension of Euclidean space
+  // 从测量数据推断图的维度
+  size_t d;  // Dimension of Euclidean space 欧几里得空间的维度
   d = (!measurements.empty() ? measurements[0].t.size() : 0);
-  size_t dh = d + 1;  // Homogenized dimension of Euclidean space
-  size_t m;           // Number of measurements
-  m = measurements.size();
-  size_t n = 0;  // Number of poses
-  for (const RelativeSEMeasurement &meas: measurements) {
-    if (n < meas.p1) n = meas.p1;
-    if (n < meas.p2) n = meas.p2;
+  size_t dh =
+      d + 1;  // Homogenized dimension of Euclidean space 齐次化后的欧几里得空间维度
+  size_t m;   // Number of measurements 测量数据的数量
+  m = measurements.size();  // 测量值的数量
+  size_t n = 0;             // Number of poses 位姿节点的数量
+  for (const RelativeSEMeasurement &meas : measurements) {
+    if (n < meas.p1) n = meas.p1;  // 更新最大节点索引
+    if (n < meas.p2) n = meas.p2;  // 更新最大节点索引
   }
+  // 考虑0基索引，节点数是最大索引加1
   n++;  // Account for 0-based indexing: node indexes go from 0 to max({i,j})
 
   // Define connection incidence matrix dimensions
   // This is a [n x m] (dh x dh)-block matrix
+  // 定义连接关联矩阵的维度，这是一个[n x m]的(dh x dh)块矩阵
   size_t rows = (d + 1) * n;
   size_t cols = (d + 1) * m;
 
   // We use faster ordered insertion, as suggested in
   // https://eigen.tuxfamily.org/dox/group__TutorialSparse.html#TutorialSparseFilling
-  Eigen::SparseMatrix<double, Eigen::ColMajor> A(rows, cols);
-  A.reserve(Eigen::VectorXi::Constant(cols, 8));
+  Eigen::SparseMatrix<double, Eigen::ColMajor> A(rows,
+                                                 cols);  // 创建一个列主序稀疏矩阵A
+  A.reserve(Eigen::VectorXi::Constant(cols, 8));         // 为每列预留8个非零元素的空间
   DiagonalMatrix Omega(cols);  // One block per measurement: (d+1)*m
-  DiagonalMatrix::DiagonalVectorType &diagonal = Omega.diagonal();
+                               // 创建一个对角矩阵，每个测量对应一个块：(d+1)*m
+  DiagonalMatrix::DiagonalVectorType &diagonal =
+      Omega.diagonal();  // 获取对角矩阵的对角线向量引用
 
   // Insert actual measurement values
-  size_t i, j;
+  // 插入实际测量值
+  size_t i, j;  // 声明索引变量i和j
   for (size_t k = 0; k < m; k++) {
     const RelativeSEMeasurement &meas = measurements[k];
-    i = meas.p1;
-    j = meas.p2;
+    i = meas.p1;  // 获取第一个位姿节点的索引
+    j = meas.p2;  // 获取第二个位姿节点的索引
 
-    /// Assign SE(d) matrix to block leaving node i
+    /// Assign SE(d) matrix to block leaving node i 将SE(d)矩阵赋值给从节点i离开的块
     /// AT(i,k) = -Tij (NOTE: NEGATIVE)
     // Do it column-wise for speed
     // Elements of rotation
     for (size_t c = 0; c < d; c++)
-      for (size_t r = 0; r < d; r++)
-        A.insert(i * dh + r, k * dh + c) = -meas.R(r, c);
+      for (size_t r = 0; r < d; r++) A.insert(i * dh + r, k * dh + c) = -meas.R(r, c);
 
     // Elements of translation
-    for (size_t r = 0; r < d; r++)
-      A.insert(i * dh + r, k * dh + d) = -meas.t(r);
+    for (size_t r = 0; r < d; r++) A.insert(i * dh + r, k * dh + d) = -meas.t(r);
 
     // Additional 1 for homogeneization
     A.insert(i * dh + d, k * dh + d) = -1;
 
     /// Assign (d+1)-identity matrix to block leaving node j
+    // 将(d+1)维单位矩阵赋值给从节点j离开的块
     /// AT(j,k) = +I (NOTE: POSITIVE)
     for (size_t r = 0; r < d + 1; r++) A.insert(j * dh + r, k * dh + r) = +1;
 
-    /// Assign isotropic weights in diagonal matrix
-    for (size_t r = 0; r < d; r++) diagonal[k * dh + r] = meas.weight * meas.kappa;
+    /// Assign isotropic weights in diagonal matrix 在对角矩阵中赋值各向同性权重
+    for (size_t r = 0; r < d; r++)
+      diagonal[k * dh + r] = meas.weight * meas.kappa;  // 设置旋转部分的权重
 
-    diagonal[k * dh + d] = meas.weight * meas.tau;
+    diagonal[k * dh + d] = meas.weight * meas.tau;  // 设置平移部分的权重
   }
 
-  A.makeCompressed();
+  A.makeCompressed();  // 将矩阵A转换为压缩格式，提高计算效率
 
   AT = A;
   OmegaT = Omega;
@@ -343,8 +353,10 @@ SparseMatrix constructConnectionLaplacianSE(
   return AT * OmegaT * AT.transpose();
 }
 
-void constructBMatrices(const std::vector<RelativeSEMeasurement> &measurements, SparseMatrix &B1,
-                        SparseMatrix &B2, SparseMatrix &B3) {
+void constructBMatrices(const std::vector<RelativeSEMeasurement> &measurements,
+                        SparseMatrix &B1,
+                        SparseMatrix &B2,
+                        SparseMatrix &B3) {
   // Clear input matrices
   B1.setZero();
   B2.setZero();
@@ -359,7 +371,7 @@ void constructBMatrices(const std::vector<RelativeSEMeasurement> &measurements, 
   size_t d2 = d * d;
   size_t d3 = d * d * d;
 
-  size_t i, j; // Indices for the tail and head of the given measurement
+  size_t i, j;  // Indices for the tail and head of the given measurement
   double sqrttau;
   size_t max_pair;
 
@@ -373,18 +385,19 @@ void constructBMatrices(const std::vector<RelativeSEMeasurement> &measurements, 
 
     // Block corresponding to the tail of the measurement
     for (size_t l = 0; l < d; l++) {
-      triplets.emplace_back(e * d + l, i * d + l,
-                            -sqrttau); // Diagonal element corresponding to tail
-      triplets.emplace_back(e * d + l, j * d + l,
-                            sqrttau); // Diagonal element corresponding to head
+      triplets.emplace_back(e * d + l,
+                            i * d + l,
+                            -sqrttau);  // Diagonal element corresponding to tail
+      triplets.emplace_back(e * d + l,
+                            j * d + l,
+                            sqrttau);  // Diagonal element corresponding to head
     }
 
     // Keep track of the number of poses we've seen
     max_pair = std::max<size_t>(i, j);
-    if (max_pair > num_poses)
-      num_poses = max_pair;
+    if (max_pair > num_poses) num_poses = max_pair;
   }
-  num_poses++; // Account for zero-based indexing
+  num_poses++;  // Account for zero-based indexing
 
   B1.resize(d * measurements.size(), d * num_poses);
   B1.setFromTriplets(triplets.begin(), triplets.end());
@@ -398,8 +411,8 @@ void constructBMatrices(const std::vector<RelativeSEMeasurement> &measurements, 
     sqrttau = sqrt(measurements[e].tau);
     for (size_t k = 0; k < d; k++)
       for (size_t r = 0; r < d; r++)
-        triplets.emplace_back(d * e + r, d2 * i + d * k + r,
-                              -sqrttau * measurements[e].t(k));
+        triplets.emplace_back(
+            d * e + r, d2 * i + d * k + r, -sqrttau * measurements[e].t(k));
   }
 
   B2.resize(d * measurements.size(), d2 * num_poses);
@@ -415,13 +428,13 @@ void constructBMatrices(const std::vector<RelativeSEMeasurement> &measurements, 
 
     for (size_t r = 0; r < d; r++)
       for (size_t c = 0; c < d; c++) {
-        i = measurements[e].p1; // Tail of measurement
-        j = measurements[e].p2; // Head of measurement
+        i = measurements[e].p1;  // Tail of measurement
+        j = measurements[e].p2;  // Head of measurement
 
         // Representation of the -sqrt(kappa) * Rt(i,j) \otimes I_d block
         for (size_t l = 0; l < d; l++)
-          triplets.emplace_back(e * d2 + d * r + l, i * d2 + d * c + l,
-                                -sqrtkappa * R(c, r));
+          triplets.emplace_back(
+              e * d2 + d * r + l, i * d2 + d * c + l, -sqrtkappa * R(c, r));
       }
 
     for (size_t l = 0; l < d2; l++)
@@ -432,13 +445,14 @@ void constructBMatrices(const std::vector<RelativeSEMeasurement> &measurements, 
   B3.setFromTriplets(triplets.begin(), triplets.end());
 }
 
-Matrix recoverTranslations(const SparseMatrix &B1, const SparseMatrix &B2,
+Matrix recoverTranslations(const SparseMatrix &B1,
+                           const SparseMatrix &B2,
                            const Matrix &R) {
   unsigned int d = R.rows();
   unsigned int n = R.cols() / d;
 
   // Vectorization of R matrix
-  Eigen::Map<Eigen::VectorXd> rvec((double *) R.data(), d * d * n);
+  Eigen::Map<Eigen::VectorXd> rvec((double *)R.data(), d * d * n);
 
   // Form the matrix comprised of the right (n-1) block columns of B1
   SparseMatrix B1red = B1.rightCols(d * (n - 1));
@@ -489,18 +503,20 @@ Matrix fixedStiefelVariable(unsigned d, unsigned r) {
   std::srand(1);
   ROPTLIB::StieVariable var(r, d);
   var.RandInManifold();
-  return Eigen::Map<Matrix>((double *) var.ObtainReadData(), r, d);
+  return Eigen::Map<Matrix>((double *)var.ObtainReadData(), r, d);
 }
 
 Matrix randomStiefelVariable(unsigned d, unsigned r) {
   ROPTLIB::StieVariable var(r, d);
   var.RandInManifold();
-  return Eigen::Map<Matrix>((double *) var.ObtainReadData(), r, d);
+  return Eigen::Map<Matrix>((double *)var.ObtainReadData(), r, d);
 }
 
 double computeMeasurementError(const RelativeSEMeasurement &m,
-                               const Matrix &R1, const Matrix &t1,
-                               const Matrix &R2, const Matrix &t2) {
+                               const Matrix &R1,
+                               const Matrix &t1,
+                               const Matrix &R2,
+                               const Matrix &t2) {
   double rotationErrorSq = (R1 * m.R - R2).squaredNorm();
   double translationErrorSq = (t2 - t1 - R1 * m.t).squaredNorm();
   return m.kappa * rotationErrorSq + m.tau * translationErrorSq;
@@ -511,9 +527,7 @@ double chi2inv(double quantile, size_t dof) {
   return boost::math::quantile(chi2, quantile);
 }
 
-double angular2ChordalSO3(double rad) {
-  return 2 * sqrt(2) * sin(rad / 2);
-}
+double angular2ChordalSO3(double rad) { return 2 * sqrt(2) * sin(rad / 2); }
 
 void checkRotationMatrix(const Matrix &R) {
   const auto d = R.rows();
@@ -521,9 +535,8 @@ void checkRotationMatrix(const Matrix &R) {
   double err_det = abs(R.determinant() - 1.0);
   double err_norm = (R.transpose() * R - Matrix::Identity(d, d)).norm();
   if (err_det > 1e-5 || err_norm > 1e-5) {
-    LOG(WARNING)
-        << "[checkRotationMatrix] Invalid rotation: err_det="
-        << err_det << ", err_norm=" << err_norm;
+    LOG(WARNING) << "[checkRotationMatrix] Invalid rotation: err_det=" << err_det
+                 << ", err_norm=" << err_norm;
   }
 }
 
@@ -531,9 +544,7 @@ void checkStiefelMatrix(const Matrix &Y) {
   const auto d = Y.cols();
   double err_norm = (Y.transpose() * Y - Matrix::Identity(d, d)).norm();
   if (err_norm > 1e-5) {
-    LOG(WARNING)
-        << "[checkStiefelMatrix] Invalid Stiefel: err_norm="
-        << err_norm;
+    LOG(WARNING) << "[checkStiefelMatrix] Invalid Stiefel: err_norm=" << err_norm;
   }
 }
 
