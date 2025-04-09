@@ -280,6 +280,8 @@ class PGOAgent {
    */
   void addMeasurement(const RelativeSEMeasurement &factor);
 
+  void addUWBMeasurement(const RelativeSEMeasurement &factor);
+
   /**
    * @brief Perform local initialization for this robot.
    * After this function call, the robot is initialized in its LOCAL frame
