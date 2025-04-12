@@ -86,6 +86,12 @@ class PoseGraph {
    */
   unsigned int numSharedLoopClosures() const { return shared_lcs_.size(); }
   /**
+   * @brief 返回uwbu约束边数量
+   * @return
+   */
+  unsigned int numUWB() const { return uwb_.size(); }
+
+  /**
    * @brief Return the number of all measurements
    * @return
    */
@@ -114,6 +120,11 @@ class PoseGraph {
    */
   void addMeasurement(const RelativeSEMeasurement &m);
   /**
+   * @brief 添加uwb约束边 如果输入测量已经存在则忽略
+   * @param factor
+   */
+  void addUWBMeasurement(const RelativeSEMeasurement &factor);
+  /**
    * @brief Return a copy of the list of odometry edges
    * @return
    */
@@ -130,6 +141,12 @@ class PoseGraph {
    * @return
    */
   std::vector<RelativeSEMeasurement> sharedLoopClosures() const { return shared_lcs_; }
+  /**
+   * @brief 返回uwb约束边的副本
+   * @return
+   */
+  std::vector<RelativeSEMeasurement> uwb() const { return uwb_; }
+
   /**
    * @brief Return a copy of all inter-robot loop closures with the specified neighbor
    * @param neighbor_id
@@ -274,6 +291,11 @@ class PoseGraph {
    */
   bool hasMeasurement(const PoseID &srcID, const PoseID &dstID) const;
   /**
+   * @brief 检查是否存在uwb约束边
+   */
+  bool hasUWBMeasurement(const PoseID &srcID, const PoseID &dstID) const;
+
+  /**
    * @brief Find and return a writable pointer to the specified measurement within this
    * pose graph
    * @param measurements
@@ -283,6 +305,14 @@ class PoseGraph {
    * not exists)
    */
   RelativeSEMeasurement *findMeasurement(const PoseID &srcID, const PoseID &dstID);
+  /**
+   * @brief 查找并返回uwb约束边的可写指针
+   * @param srcID
+   * @param dstID
+   * @return 可写指针（如果不存在则返回nullptr）
+   */
+  RelativeSEMeasurement *findUWBMeasurement(const PoseID &srcID, const PoseID &dstID);
+
   /**
    * @brief Return a vector of writable pointers to all loop closures in the
    * pose graph (contains both private and inter-robot loop closures)
@@ -297,6 +327,16 @@ class PoseGraph {
    * @brief Return a vector of pointers to all inactive loop closures
    */
   std::vector<RelativeSEMeasurement *> inactiveLoopClosures();
+  /**
+   * @brief 返回active的UWB测量vector指针
+   *
+   */
+  std::vector<RelativeSEMeasurement *> activeUWBMeasurements();
+  /**
+   * @brief 返回inactive的UWB测量vector指针
+   */
+  std::vector<RelativeSEMeasurement *> inactiveUWBMeasurements();
+
   /**
    * @brief Set to true to use measurements with inactive neighbors
    */
@@ -317,6 +357,9 @@ class PoseGraph {
 
   // Store shared loop closure measurements
   std::vector<RelativeSEMeasurement> shared_lcs_;
+
+  // 存储由多uwb解算得到的约束
+  std::vector<RelativeSEMeasurement> uwb_;
 
   // Store the set of public poses that need to be sent to other robots
   PoseSet local_shared_pose_ids_;
@@ -362,6 +405,7 @@ class PoseGraph {
    * @param factor
    */
   void addSharedLoopClosure(const RelativeSEMeasurement &factor);
+
   /**
    * @brief Construct the quadratic cost matrix
    * @return
@@ -388,6 +432,9 @@ class PoseGraph {
   // Mapping Edge ID to the corresponding index in the vector of measurements
   // (either odometry, private loop closures, or public loop closures)
   std::unordered_map<EdgeID, size_t, HashEdgeID> edge_id_to_index_;
+
+  // uwb约束边的索引 可能与public loop closures重复 分开处理
+  std::unordered_map<EdgeID, size_t, HashEdgeID> edge_id_to_uwb_index_;
 
   // Use measurements with inactive neighbors when constructing data matrices
   bool use_inactive_neighbors_;

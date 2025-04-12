@@ -185,6 +185,15 @@ void PGOAgent::addMeasurement(const RelativeSEMeasurement &factor) {
   mPoseGraph->addMeasurement(factor);
 }
 
+void PGOAgent::addUWBMeasurement(const RelativeSEMeasurement &factor) {
+  if (mState != PGOAgentState::WAIT_FOR_DATA) {
+    LOG(WARNING) << "Robot state is not WAIT_FOR_DATA. Ignore new measurements!";
+    return;
+  }
+  lock_guard<mutex> mLock(mMeasurementsMutex);
+  mPoseGraph->addUWBMeasurement(factor);
+}
+
 void PGOAgent::setMeasurements(
     const std::vector<RelativeSEMeasurement> &inputOdometry,
     const std::vector<RelativeSEMeasurement> &inputPrivateLoopClosures,
@@ -1063,6 +1072,13 @@ void PGOAgent::initializeRobustOptimization() {
       m->weight = 1.0;
     }
   }
+
+  // uwb
+  for (RelativeSEMeasurement *m : mPoseGraph->activeUWBMeasurements()) {
+    if (!m->fixedWeight) {
+      m->weight = 1.0;
+    }
+  }
 }
 
 bool PGOAgent::computeMeasurementResidual(const RelativeSEMeasurement &measurement,
@@ -1123,6 +1139,17 @@ void PGOAgent::updateMeasurementWeights() {
       LOG(WARNING) << "Failed to update weight for edge: \n" << *m;
     }
   }
+
+  // uwb
+  for (auto &m : mPoseGraph->activeUWBMeasurements()) {
+    if (m->fixedWeight) continue;
+    if (computeMeasurementResidual(*m, &residual)) {
+      m->weight = mRobustCost.weight(residual);
+    } else {
+      LOG(WARNING) << "Failed to update weight for edge: \n" << *m;
+    }
+  }
+
   mWeightUpdateCount++;
   mLatestWeightUpdateIteration = iteration_number();
   mRobustOptInnerIter = 0;
