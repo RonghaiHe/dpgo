@@ -548,7 +548,7 @@ bool PoseGraph::constructQ() {
   }
 
   // 遍历 uwb_
-  for (const auto &m : uwb_) {
+  for (auto &m : uwb_) {
     // Set relative SE matrix (homogeneous form)
     T.block(0, 0, d_, d_) = m.R;
     T.block(0, d_, d_, 1) = m.t;
@@ -571,7 +571,9 @@ bool PoseGraph::constructQ() {
         if (!has_neighbor_pose) {
           LOG(WARNING) << "Missing active neighbor pose " << nID.robot_id << ", "
                        << nID.frame_id;
-          return false;
+          m.weight = 0.0;
+          continue;
+          //  return false;
         }
       } else {
         // Measurement with inactive neighbor
@@ -595,7 +597,9 @@ bool PoseGraph::constructQ() {
         if (!has_neighbor_pose) {
           LOG(WARNING) << "Missing active neighbor pose " << nID.robot_id << ", "
                        << nID.frame_id;
-          return false;
+          m.weight = 0.0;
+          continue;
+          // return false;
         }
       } else {
         // Measurement with inactive neighbor
@@ -716,7 +720,7 @@ bool PoseGraph::constructG() {
   }
 
   // 遍历 uwb_
-  for (const auto &m : uwb_) {
+  for (auto &m : uwb_) {
     // Construct relative SE matrix in homogeneous form
     T.block(0, 0, d, d) = m.R;
     T.block(0, d, d, 1) = m.t;
@@ -740,7 +744,9 @@ bool PoseGraph::constructG() {
         if (!has_neighbor_pose) {
           LOG(WARNING) << "Missing active neighbor pose " << nID.robot_id << ", "
                        << nID.frame_id;
-          return false;
+          m.weight = 0.0;
+          continue;
+          // return false;
         }
       } else {
         // Measurement with inactive neighbor
@@ -765,7 +771,9 @@ bool PoseGraph::constructG() {
         if (!has_neighbor_pose) {
           LOG(WARNING) << "Missing active neighbor pose " << nID.robot_id << ", "
                        << nID.frame_id;
-          return false;
+          m.weight = 0.0;
+          continue;
+          // return false;
         }
       } else {
         // Measurement with inactive neighbor
