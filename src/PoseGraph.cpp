@@ -153,7 +153,7 @@ void PoseGraph::addUWBMeasurement(const RelativeSEMeasurement &factor) {
   // Check for duplicate inter-robot loop closure
   const PoseID src_id(factor.r1, factor.p1);
   const PoseID dst_id(factor.r2, factor.p2);
-  if (hasUWBMeasurement(src_id, dst_id)) return;
+  // if (hasUWBMeasurement(src_id, dst_id)) return;
 
   CHECK(factor.R.rows() == d_ && factor.R.cols() == d_);
   CHECK(factor.t.rows() == d_ && factor.t.cols() == 1);
