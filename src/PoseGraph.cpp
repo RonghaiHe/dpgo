@@ -382,18 +382,30 @@ std::vector<RelativeSEMeasurement *> PoseGraph::inactiveUWBMeasurements() {
 
 PoseGraph::Statistics PoseGraph::statistics() const {
   // Currently, this function is only meaningful for GNC_TLS
-  double totalCount = 0;
-  double acceptCount = 0;
-  double rejectCount = 0;
+  uint64_t totalCount = 0;
+  uint64_t acceptCount = 0;
+  uint64_t rejectCount = 0;
+  uint64_t ac_private_lc = 0;
+  uint64_t ac_shared_lc = 0;
+  uint64_t ac_uwb_lc = 0;
+  uint64_t re_private_lc = 0;
+  uint64_t re_shared_lc = 0;
+  uint64_t re_uwb_lc = 0;
+  uint64_t total_private_lc = 0;
+  uint64_t total_shared_lc = 0;
+  uint64_t total_uwb_lc = 0;
   // TODO: specify tolerance for rejected and accepted loop closures
   for (const auto &m : private_lcs_) {
     // if (m.fixedWeight) continue;
     if (m.weight == 1) {
       acceptCount += 1;
+      ac_private_lc += 1;
     } else if (m.weight == 0) {
       rejectCount += 1;
+      re_private_lc += 1;
     }
     totalCount += 1;
+    total_private_lc += 1;
   }
   for (const auto &m : shared_lcs_) {
     // Skip loop closures with inactive neighbors
@@ -405,10 +417,13 @@ PoseGraph::Statistics PoseGraph::statistics() const {
     }
     if (m.weight == 1) {
       acceptCount += 1;
+      ac_shared_lc += 1;
     } else if (m.weight == 0) {
       rejectCount += 1;
+      re_shared_lc += 1;
     }
     totalCount += 1;
+    total_shared_lc += 1;
   }
   // uwbs
   for (const auto &m : uwb_) {
@@ -421,10 +436,13 @@ PoseGraph::Statistics PoseGraph::statistics() const {
     }
     if (m.weight == 1) {
       acceptCount += 1;
+      ac_uwb_lc += 1;
     } else if (m.weight == 0) {
       rejectCount += 1;
+      re_uwb_lc += 1;
     }
     totalCount += 1;
+    total_uwb_lc += 1;
   }
 
   PoseGraph::Statistics statistics;
@@ -432,6 +450,16 @@ PoseGraph::Statistics PoseGraph::statistics() const {
   statistics.accept_loop_closures = acceptCount;
   statistics.reject_loop_closures = rejectCount;
   statistics.undecided_loop_closures = totalCount - acceptCount - rejectCount;
+
+  statistics.ac_private_lc = ac_private_lc;
+  statistics.re_private_lc = re_private_lc;
+  statistics.undecided_private_lc = total_private_lc - ac_private_lc - re_private_lc;
+  statistics.ac_shared_lc = ac_shared_lc;
+  statistics.re_shared_lc = re_shared_lc;
+  statistics.undecided_shared_lc = total_shared_lc - ac_shared_lc - re_shared_lc;
+  statistics.ac_uwb_lc = ac_uwb_lc;
+  statistics.re_uwb_lc = re_uwb_lc;
+  statistics.undecided_uwb_lc = total_uwb_lc - ac_uwb_lc - re_uwb_lc;
 
   return statistics;
 }

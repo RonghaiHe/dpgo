@@ -38,11 +38,29 @@ class PoseGraph {
         : total_loop_closures(0),
           accept_loop_closures(0),
           reject_loop_closures(0),
-          undecided_loop_closures(0) {}
-    double total_loop_closures;
-    double accept_loop_closures;
-    double reject_loop_closures;
-    double undecided_loop_closures;
+          undecided_loop_closures(0),
+          ac_private_lc(0),
+          ac_shared_lc(0),
+          ac_uwb_lc(0),
+          re_private_lc(0),
+          re_shared_lc(0),
+          re_uwb_lc(0),
+          undecided_private_lc(0),
+          undecided_shared_lc(0),
+          undecided_uwb_lc(0) {}
+    uint64_t total_loop_closures;
+    uint64_t accept_loop_closures;
+    uint64_t reject_loop_closures;
+    uint64_t undecided_loop_closures;
+    uint64_t ac_private_lc;
+    uint64_t ac_shared_lc;
+    uint64_t ac_uwb_lc;
+    uint64_t re_private_lc;
+    uint64_t re_shared_lc;
+    uint64_t re_uwb_lc;
+    uint64_t undecided_private_lc;
+    uint64_t undecided_shared_lc;
+    uint64_t undecided_uwb_lc;
   };
   /**
    * @brief
