@@ -311,7 +311,9 @@ class PoseGraph {
   /**
    * @brief 检查是否存在uwb约束边
    */
-  bool hasUWBMeasurement(const PoseID &srcID, const PoseID &dstID) const;
+  bool hasUWBMeasurement(const PoseID &srcID,
+                         const PoseID &dstID,
+                         const uint64_t &number_edge_dis) const;
 
   /**
    * @brief Find and return a writable pointer to the specified measurement within this
@@ -329,7 +331,8 @@ class PoseGraph {
    * @param dstID
    * @return 可写指针（如果不存在则返回nullptr）
    */
-  RelativeSEMeasurement *findUWBMeasurement(const PoseID &srcID, const PoseID &dstID);
+  // RelativeSEMeasurement *findUWBMeasurement(const PoseID &srcID, const PoseID
+  // &dstID);
 
   /**
    * @brief Return a vector of writable pointers to all loop closures in the
@@ -452,7 +455,7 @@ class PoseGraph {
   std::unordered_map<EdgeID, size_t, HashEdgeID> edge_id_to_index_;
 
   // uwb约束边的索引 可能与public loop closures重复 分开处理
-  std::unordered_map<EdgeID, size_t, HashEdgeID> edge_id_to_uwb_index_;
+  std::unordered_map<EdgeID_dis, size_t, HashEdgeID_dis> edge_id_to_uwb_index_;
 
   // Use measurements with inactive neighbors when constructing data matrices
   bool use_inactive_neighbors_;

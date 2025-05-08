@@ -153,7 +153,7 @@ void PoseGraph::addUWBMeasurement(const RelativeSEMeasurement &factor) {
   // Check for duplicate inter-robot loop closure
   const PoseID src_id(factor.r1, factor.p1);
   const PoseID dst_id(factor.r2, factor.p2);
-  // if (hasUWBMeasurement(src_id, dst_id)) return;
+  if (hasUWBMeasurement(src_id, dst_id, factor.number_edge_dis)) return;
 
   CHECK(factor.R.rows() == d_ && factor.R.cols() == d_);
   CHECK(factor.t.rows() == d_ && factor.t.cols() == 1);
@@ -175,7 +175,8 @@ void PoseGraph::addUWBMeasurement(const RelativeSEMeasurement &factor) {
 
   uwb_.push_back(factor);
   const EdgeID edge_id(src_id, dst_id);
-  edge_id_to_uwb_index_.emplace(edge_id, uwb_.size() - 1);
+  const EdgeID_dis edge_id_dis(edge_id, factor.number_edge_dis);
+  edge_id_to_uwb_index_.emplace(edge_id_dis, uwb_.size() - 1);
 }
 
 std::vector<RelativeSEMeasurement> PoseGraph::sharedLoopClosuresWithRobot(
@@ -250,9 +251,12 @@ bool PoseGraph::hasMeasurement(const PoseID &srcID, const PoseID &dstID) const {
   return edge_id_to_index_.find(edge_id) != edge_id_to_index_.end();
 }
 
-bool PoseGraph::hasUWBMeasurement(const PoseID &srcID, const PoseID &dstID) const {
+bool PoseGraph::hasUWBMeasurement(const PoseID &srcID,
+                                  const PoseID &dstID,
+                                  const uint64_t &number_edge_dis) const {
   const EdgeID edge_id(srcID, dstID);
-  return edge_id_to_uwb_index_.find(edge_id) != edge_id_to_uwb_index_.end();
+  const EdgeID_dis edge_id_dis(edge_id, number_edge_dis);
+  return edge_id_to_uwb_index_.find(edge_id_dis) != edge_id_to_uwb_index_.end();
 }
 
 RelativeSEMeasurement *PoseGraph::findMeasurement(const PoseID &srcID,
@@ -279,23 +283,23 @@ RelativeSEMeasurement *PoseGraph::findMeasurement(const PoseID &srcID,
   return edge;
 }
 
-RelativeSEMeasurement *PoseGraph::findUWBMeasurement(const PoseID &srcID,
-                                                     const PoseID &dstID) {
-  RelativeSEMeasurement *edge = nullptr;
-  if (hasUWBMeasurement(srcID, dstID)) {
-    const EdgeID edge_id(srcID, dstID);
-    size_t index = edge_id_to_uwb_index_.at(edge_id);
-    edge = &uwb_[index];
-  }
-  if (edge) {
-    // Sanity check
-    CHECK_EQ(edge->r1, srcID.robot_id);
-    CHECK_EQ(edge->p1, srcID.frame_id);
-    CHECK_EQ(edge->r2, dstID.robot_id);
-    CHECK_EQ(edge->p2, dstID.frame_id);
-  }
-  return edge;
-}
+// RelativeSEMeasurement *PoseGraph::findUWBMeasurement(const PoseID &srcID,
+//                                                      const PoseID &dstID) {
+//   RelativeSEMeasurement *edge = nullptr;
+//   if (hasUWBMeasurement(srcID, dstID)) {
+//     const EdgeID edge_id(srcID, dstID);
+//     size_t index = edge_id_to_uwb_index_.at(edge_id);
+//     edge = &uwb_[index];
+//   }
+//   if (edge) {
+//     // Sanity check
+//     CHECK_EQ(edge->r1, srcID.robot_id);
+//     CHECK_EQ(edge->p1, srcID.frame_id);
+//     CHECK_EQ(edge->r2, dstID.robot_id);
+//     CHECK_EQ(edge->p2, dstID.frame_id);
+//   }
+//   return edge;
+// }
 
 std::vector<RelativeSEMeasurement *> PoseGraph::allLoopClosures() {
   std::vector<RelativeSEMeasurement *> output;

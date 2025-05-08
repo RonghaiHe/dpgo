@@ -4,7 +4,7 @@
  * @Author: Ronghai He
  * @Date: 2025-01-08 20:07:51
  * @LastEditors: RonghaiHe hrhkjys@qq.com
- * @LastEditTime: 2025-01-08 20:07:52
+ * @LastEditTime: 2025-04-17 15:04:43
  * @FilePath: /src/dpgo/include/DPGO/RelativeSEMeasurement.h
  * @Version:
  * @Description:
@@ -60,6 +60,8 @@ struct RelativeSEMeasurement {
 
   /** Weight between (0,1) used in Graduated Non-Convexity */
   double weight;
+
+  uint64_t number_edge_dis;
 
   /** Simple default constructor; does nothing */
   RelativeSEMeasurement() = default;

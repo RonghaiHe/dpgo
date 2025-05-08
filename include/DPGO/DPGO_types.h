@@ -151,6 +151,22 @@ class EdgeID {
     return src_pose_id.robot_id != dst_pose_id.robot_id;
   }
 };
+
+class EdgeID_dis : public EdgeID {
+ public:
+  uint64_t number_edge_dis;
+  EdgeID_dis(const PoseID &src_id, const PoseID &dst_id, const uint64_t &num_edge_dis)
+      : EdgeID(src_id, dst_id), number_edge_dis(num_edge_dis) {}
+
+  EdgeID_dis(const EdgeID &edge_id, const uint64_t &num_edge_dis)
+      : EdgeID(edge_id.src_pose_id, edge_id.dst_pose_id),
+        number_edge_dis(num_edge_dis) {}
+  bool operator==(const EdgeID_dis &other) const {
+    return (src_pose_id == other.src_pose_id && dst_pose_id == other.dst_pose_id &&
+            number_edge_dis == other.number_edge_dis);
+  }
+};
+
 // Comparator for EdgeID
 struct CompareEdgeID {
   bool operator()(const EdgeID &a, const EdgeID &b) const {
@@ -188,6 +204,31 @@ struct HashEdgeID {
     return seed;
   }
 };
+
+struct HashEdgeID_dis {
+  std::size_t operator()(const EdgeID_dis &edge_id_dis) const {
+    // Reference:
+    // https://stackoverflow.com/questions/17016175/c-unordered-map-using-a-custom-class-type-as-the-key
+    using boost::hash_combine;
+    using boost::hash_value;
+
+    // Start with a hash value of 0    .
+    std::size_t seed = 0;
+
+    // Modify 'seed' by XORing and bit-shifting in
+    // one member of 'Key' after the other:
+    hash_combine(seed, hash_value(edge_id_dis.number_edge_dis));
+
+    hash_combine(seed, hash_value(edge_id_dis.src_pose_id.robot_id));
+    hash_combine(seed, hash_value(edge_id_dis.dst_pose_id.robot_id));
+    hash_combine(seed, hash_value(edge_id_dis.src_pose_id.frame_id));
+    hash_combine(seed, hash_value(edge_id_dis.dst_pose_id.frame_id));
+
+    // Return the result.
+    return seed;
+  }
+};
+
 }  // namespace DPGO
 
 #endif
